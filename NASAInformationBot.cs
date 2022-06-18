@@ -9,7 +9,8 @@ using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 using Telegram.Bot.Extensions.Polling;
 using Telegram.Bot.Exceptions;
-namespace TelegramBot
+
+namespace NASAInformationBot
 {
     public class NASAInformationBot
     {

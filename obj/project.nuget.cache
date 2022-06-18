@@ -1,10 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "EjGLE8HRkQKIsj4T5Crr4rqLHRC3TwUlFUqh+kQyK9NGDMfQsn4ih+Z/DAQQpwOBjyJ37SH76lCfIxtY0i4Yaw==",
+  "dgSpecHash": "iQBNls18Xs/J9px3yIMLwJCjAhY5oNNf2Bcs70/s9+ZHDce8+SZizr/LTzyot5a7OEv9xw3oGGriALYpcRI71Q==",
   "success": true,
-  "projectFilePath": "D:\\GitRep\\TelegramBot\\TelegramBot.csproj",
+  "projectFilePath": "D:\\GitRep\\TelegramBot\\NASAIformationBot.csproj",
   "expectedPackageFiles": [
-    "C:\\Users\\BuyU\\.nuget\\packages\\newtonsoft.json\\12.0.2\\newtonsoft.json.12.0.2.nupkg.sha512",
+    "C:\\Users\\BuyU\\.nuget\\packages\\newtonsoft.json\\13.0.1\\newtonsoft.json.13.0.1.nupkg.sha512",
     "C:\\Users\\BuyU\\.nuget\\packages\\system.threading.channels\\6.0.0\\system.threading.channels.6.0.0.nupkg.sha512",
     "C:\\Users\\BuyU\\.nuget\\packages\\telegram.bot\\18.0.0\\telegram.bot.18.0.0.nupkg.sha512",
     "C:\\Users\\BuyU\\.nuget\\packages\\telegram.bot.extensions.polling\\1.0.2\\telegram.bot.extensions.polling.1.0.2.nupkg.sha512"
