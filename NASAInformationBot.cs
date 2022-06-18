@@ -54,6 +54,12 @@ namespace TelegramBot
                 await botClient.SendTextMessageAsync(message.Chat.Id, "Виберіть команду /keyboard");
                 return;
             }
+            else
+                if (message.Text == "/image")
+            {
+                await botClient.SendPhotoAsync(message.Chat.Id, $"https://apod.nasa.gov/apod/image/e_lens.gif");
+                return;
+            }
         }
     }
 }
