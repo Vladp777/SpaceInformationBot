@@ -13,21 +13,31 @@ namespace NASAInformationBot.Client
     {
         private HttpClient _httpClient;
         private static string _adrres;
-        private static string _apikey;
+        //private static string _apikey;
 
         public APODClient()
         {
             _adrres = Constants.address;
-            _apikey = Constants.apikey;
+            //_apikey = Constants.apikey;
             _httpClient = new HttpClient();
             _httpClient.BaseAddress = new Uri(_adrres);
         }
 
-        public async Task<APODModel> GetImageAsync()
+        public async Task<APODModel> GetAPODAsync()
         {
-            var response = await _httpClient.GetAsync($"/planetary/apod?api_key={_apikey}");
-            var image = response.Content.ReadAsStringAsync().Result;
-            var result = JsonConvert.DeserializeObject<APODModel>(image);
+            //var response = await _httpClient.GetAsync($"/planetary/apod?api_key={_apikey}");
+            var response = await _httpClient.GetAsync($"/APOD");
+            var content = response.Content.ReadAsStringAsync().Result;
+            var result = JsonConvert.DeserializeObject<APODModel>(content);
+            return result;
+        }
+
+        public async Task<APODModel> GetAPODAsync(string date)
+        {
+            //var response = await _httpClient.GetAsync($"/planetary/apod?api_key={_apikey}");
+            var response = await _httpClient.GetAsync($"/APODbyDate?date={date}");
+            var content = response.Content.ReadAsStringAsync().Result;
+            var result = JsonConvert.DeserializeObject<APODModel>(content);
             return result;
         }
     }
