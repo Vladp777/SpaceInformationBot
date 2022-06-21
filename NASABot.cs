@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Telegram.Bot;
 using Telegram.Bot.Types;
@@ -10,23 +10,28 @@ using Telegram.Bot.Types.ReplyMarkups;
 using Telegram.Bot.Extensions.Polling;
 using Telegram.Bot.Exceptions;
 using NASAInformationBot.Client;
+//using MySql.Data.MySqlClient.Memcached;
 
 namespace NASAInformationBot
 {
     public class NASABot
     {
         TelegramBotClient client = new TelegramBotClient("5569588978:AAGeC3oGohGlp3qgrqfCgrmVqqb2wesQ8fo");
-
+        
         CancellationToken cancellationToken = new CancellationToken();
-        ReceiverOptions receiverOptions = new ReceiverOptions { AllowedUpdates = { } };
+        ReceiverOptions receiverOptions = new ReceiverOptions { 
+            AllowedUpdates = { },
+            ThrowPendingUpdates = true,
+        };
 
         public async Task Start()
         {
             client.StartReceiving(HandlerUpdateAsync, HandlerError, receiverOptions, cancellationToken);
             var botMe = await client.GetMeAsync();
+            
             Console.WriteLine($"Бот {botMe.Username} почав працювати");
             Console.ReadKey();
-
+            
         }
 
         private Task HandlerError(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
@@ -53,84 +58,137 @@ namespace NASAInformationBot
         {
             if (message.Text == "/start")
             {
-                await botClient.SendTextMessageAsync(message.Chat.Id, "Виберіть команду /keyboard");
-                return;
-            }else
-            if (message.Text == "/keyboard")
-            {
                 ReplyKeyboardMarkup replyKeyboardMarkup = new(new[]
-                {
-                    new KeyboardButton [] {"/help"},
-                    new KeyboardButton [] {"/start"}
+              {
+                    new KeyboardButton [] {"APOD", "APODbyDate"},
+                    new KeyboardButton [] {"RoverPhoto"}
 
                 })
                 {
                     ResizeKeyboard = true
 
                 };
+                
+                await botClient.SendTextMessageAsync(message.Chat.Id, "Hi, my name is NasaBot\nI can help you to know new interesting information");
 
                 Message sendMessage = await botClient.SendTextMessageAsync(
                     message.Chat.Id,
-                    "choose",
-                    replyMarkup: replyKeyboardMarkup
-                    //cancellationToken: cancellationToken
+                    "Choose, what you want to know:",
+                    replyMarkup: replyKeyboardMarkup,
+                    cancellationToken: cancellationToken
                     );
-                //await botClient.SendTextMessageAsync(message.Chat.Id, "choose");
-                return;
-            }
-            else
-            if (message.Text == "/inline")
-            {
-                InlineKeyboardMarkup inlineKeyboard = new(new[]
-                    {
-                        // first row
-                        new []
-                        {
-                            InlineKeyboardButton.WithCallbackData(text: "1.1", callbackData: "11"),
-                            InlineKeyboardButton.WithCallbackData(text: "1.2", callbackData: "12"),
-                        },
-                        // second row
-                        new []
-                        {
-                            InlineKeyboardButton.WithCallbackData(text: "2.1", callbackData: "21"),
-                            InlineKeyboardButton.WithCallbackData(text: "2.2", callbackData: "22"),
-                        },
-                    });
 
-                Message sentMessage = await botClient.SendTextMessageAsync(
-                    chatId: message.Chat.Id,
-                    text: "A message with an inline keyboard markup",
-                    replyMarkup: inlineKeyboard,
-                    cancellationToken: cancellationToken);
-            }
-            else
-                if (message.Text == "/image")
-            {
-                await botClient.SendPhotoAsync(message.Chat.Id, $"https://apod.nasa.gov/apod/image/e_lens.gif");
                 return;
             }
             else
-                if (message.Text == "/apod")
-            {
+            if (message.Text == "APOD")
+            {  
                 await SendAPOD(botClient, message);
                 return;
             }
+            else
+            if (message.Text == "APODbyDate")
+            {
+                Message sendMessage = await botClient.SendTextMessageAsync(
+                    message.Chat.Id,
+                    "Enter a date:",
+                    cancellationToken: cancellationToken
+                    );
+
+
+                Regex pattern = new Regex("[2012-2022]{1}-[1-12]{1}-[1-31]{1}");
+                while (true)
+                {
+                    
+                    Match match = pattern.Match(message.Text);
+                    if (match.Success)
+                    {
+                        await SendAPODbyDate(message.Text, botClient, message);
+                        break;
+                    }
+                }
+                
+                return;
+            }
+            
+            
+            
         }
 
         private Task SendAPOD(ITelegramBotClient botClient, Message message)
         {
-            var apod = new APODClient().GetAPODAsync();
+            var apod = new NasaClient().GetAPODAsync();
             string text = "*" + apod.Result.title + "*" + "\n\n" + apod.Result.explanation + "\n" + "_" + apod.Result.date + "_";
+
+            InlineKeyboardMarkup inlineKeyboard = new(new[]
+                    {
+                        // first row
+                        new []
+                        {
+                            InlineKeyboardButton.WithCallbackData( "Close", $"11"),
+                            InlineKeyboardButton.WithCallbackData( "Favourite", $"Close")
+
+                        },
+                    });
 
             botClient.SendPhotoAsync(
                 message.Chat.Id,
-                apod.Result.url,
+                apod.Result.hdurl,
                 caption: text,
                 parseMode: ParseMode.Markdown,
+                replyMarkup: inlineKeyboard,
                 cancellationToken: cancellationToken
                 );
+            return Task.CompletedTask; 
+        }
+        private Task SendAPODbyDate(string date, ITelegramBotClient botClient, Message message)
+        {
+            var apod = new NasaClient().GetAPODAsync(date);
+            string text = "*" + apod.Result.title + "*" + "\n\n" + apod.Result.explanation + "\n" + "_" + apod.Result.date + "_";
 
+            InlineKeyboardMarkup inlineKeyboard = new(new[]
+                    {
+                        // first row
+                        new []
+                        {
+                            InlineKeyboardButton.WithCallbackData( "Close", $"11"),
+                            InlineKeyboardButton.WithCallbackData( "Favourite", $"Close")
+
+                        },
+                    });
+
+            botClient.SendPhotoAsync(
+                message.Chat.Id,
+                apod.Result.hdurl,
+                caption: text,
+                parseMode: ParseMode.Markdown,
+                replyMarkup: inlineKeyboard,
+                cancellationToken: cancellationToken
+                );
+            
             return Task.CompletedTask;
+        }
+
+        private async Task SendMainMenuAsync(ITelegramBotClient botClient, Message message)
+        {
+            ReplyKeyboardMarkup replyKeyboardMarkup = new(new[]
+              {
+                    new KeyboardButton [] {"APOD", "APODbyDate"},
+                    new KeyboardButton [] {"RoverPhoto"}
+
+                })
+            {
+                ResizeKeyboard = true
+
+            };
+
+            Message sendMessage = await botClient.SendTextMessageAsync(
+                    message.Chat.Id,
+                    "Choose, what you want to know:",
+                    replyMarkup: replyKeyboardMarkup,
+                    cancellationToken: cancellationToken
+                    );
+            return;
         }
     }
 }
