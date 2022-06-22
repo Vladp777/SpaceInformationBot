@@ -12,7 +12,7 @@ namespace NASAInformationBot.Client
     public class NasaClient
     {
         private HttpClient _httpClient;
-        private static string _adrres;
+        private static string? _adrres;
         //private static string _apikey;
 
         public NasaClient()
@@ -40,11 +40,11 @@ namespace NASAInformationBot.Client
             var result = JsonConvert.DeserializeObject<APODModel>(content);
             return result;
         }
-        public async Task<MarsRoverPhotos> GetRoverPhotosAsync(string date, string camera = "all", int page = 1)
+        public async Task<MarsRoverPhotos> GetMarsPhotosAsync(string date, string camera, int page = 1)
         {
             var response = await _httpClient.GetAsync($"/MarsRoverPhotos?date={date}&camera={camera}&page={page}");
-            if (camera == "all")
-                response = await _httpClient.GetAsync($"/MarsRoverPhotos?date={date}&page={page}");
+            //if (camera == "all")
+            //    response = await _httpClient.GetAsync($"/MarsRoverPhotos?date={date}&page={page}");
 
             var content = response.Content.ReadAsStringAsync().Result;
             var result = JsonConvert.DeserializeObject<MarsRoverPhotos>(content);
