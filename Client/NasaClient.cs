@@ -3,19 +3,19 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using NASAInformationBot.Constant;
 using NASAInformationBot.Model;
+using NASAInformationBot.Constant;
 using Newtonsoft.Json;
 
 namespace NASAInformationBot.Client
 {
-    public class APODClient
+    public class NasaClient
     {
         private HttpClient _httpClient;
-        private static string _adrres;
+        private static string? _adrres;
         //private static string _apikey;
 
-        public APODClient()
+        public NasaClient()
         {
             _adrres = Constants.address;
             //_apikey = Constants.apikey;
@@ -38,6 +38,16 @@ namespace NASAInformationBot.Client
             var response = await _httpClient.GetAsync($"/APODbyDate?date={date}");
             var content = response.Content.ReadAsStringAsync().Result;
             var result = JsonConvert.DeserializeObject<APODModel>(content);
+            return result;
+        }
+        public async Task<MarsRoverPhotos> GetMarsPhotosAsync(string date, string camera, int page = 1)
+        {
+            var response = await _httpClient.GetAsync($"/MarsRoverPhotos?date={date}&camera={camera}&page={page}");
+            //if (camera == "all")
+            //    response = await _httpClient.GetAsync($"/MarsRoverPhotos?date={date}&page={page}");
+
+            var content = response.Content.ReadAsStringAsync().Result;
+            var result = JsonConvert.DeserializeObject<MarsRoverPhotos>(content);
             return result;
         }
     }
