@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NASAInformationBot.Constant
+namespace SpaceInformationBot.Constant
 {
     internal class Constants
     {

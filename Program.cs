@@ -1,9 +1,8 @@
-﻿using NASAInformationBot;
+﻿using SpaceInformationBot;
 using Telegram.Bot;
 
-NASABot bot = new NASABot(); 
+SpaceBot bot = new();
 
-bot.Start();
-
+await bot.Start();
 
 Console.ReadKey();
