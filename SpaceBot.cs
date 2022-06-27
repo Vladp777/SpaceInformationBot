@@ -1,28 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using SpaceInformationBot.Clients;
+using SpaceInformationBot.Constant;
+using SpaceInformationBot.Model;
+
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using Telegram.Bot;
+using Telegram.Bot.Exceptions;
+using Telegram.Bot.Extensions.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
-using Telegram.Bot.Types.ReplyMarkups;
-using Telegram.Bot.Extensions.Polling;
-using Telegram.Bot.Exceptions;
-using SpaceInformationBot.Client;
-using Telegram.Bot.Types.InlineQueryResults;
 using Telegram.Bot.Types.InputFiles;
-using System.IO;
-using SpaceInformationBot.Model;
-using SpaceInformationBot.Clients;
-using System.ComponentModel.DataAnnotations;
-
+using Telegram.Bot.Types.ReplyMarkups;
 
 namespace SpaceInformationBot
 {
     public class SpaceBot
     {
-        TelegramBotClient client = new TelegramBotClient("5569588978:AAGeC3oGohGlp3qgrqfCgrmVqqb2wesQ8fo");
+        TelegramBotClient client = new TelegramBotClient(Constants.TelegramToken);
         
         CancellationToken cancellationToken = new CancellationToken();
         ReceiverOptions receiverOptions = new ReceiverOptions { 
@@ -37,7 +30,6 @@ namespace SpaceInformationBot
             
             Console.WriteLine($"Бот {botMe.Username} почав працювати");
             Console.ReadKey();
-            
         }
 
         private Task HandlerError(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
@@ -56,12 +48,6 @@ namespace SpaceInformationBot
         {
             var handler = update.Type switch
             {
-                // UpdateType.Unknown:
-                // UpdateType.ChannelPost:
-                // UpdateType.EditedChannelPost:
-                // UpdateType.ShippingQuery:
-                // UpdateType.PreCheckoutQuery:
-                // UpdateType.Poll:
                 UpdateType.Message => HandlerMessageAsync(botClient, update.Message!),
                 UpdateType.EditedMessage => HandlerMessageAsync(botClient, update.EditedMessage!),
                 UpdateType.CallbackQuery => BotOnCallbackQueryReceived(botClient, update.CallbackQuery!),
@@ -70,52 +56,76 @@ namespace SpaceInformationBot
                 //_ => UnknownUpdateHandlerAsync(botClient, update)
             };
             await handler;
-            //if (update.Type == UpdateType.Message && update?.Message?.Text != null)
-            //{
-            //    await HandlerMessageAsync(botClient, update.Message);
-            //}
         }
         string? LastText { get; set; }
         string? FirstText { get; set; }
-        string? Date { get; set; }
+        string Date { get; set; }
         private async Task HandlerMessageAsync(ITelegramBotClient botClient, Message message)
         {
             if (message.Text == "/start")
             {
-                await botClient.SendTextMessageAsync(message.Chat.Id, "Hi, my name is NasaBot\nI can help you to know new interesting information");
+                await botClient.SendTextMessageAsync(
+                    message.Chat.Id,
+                    "Hi, my name is *SpaceInfoInfoBot*✋\n\n" +
+                    "Here you can see interesting photos of Mars🪐,\n" +
+                    "fascinating information about Space🛸 \n" +
+                    "and some information about the ISS🛰",
+                    parseMode: ParseMode.Markdown
+                    );
+
+                await SendHelpMessage(botClient, message);
 
                 await SendMainMenuAsync(botClient, message);
-
-                return;
+            }
+            else
+            if (message.Text == "/menu")
+            {
+                await SendMainMenuAsync(botClient, message);
+            }
+            else
+            if (message.Text == "/help")
+            {
+                await SendHelpMessage(botClient, message);
+            }
+            else
+            if (message.Text == "/myfavourites")
+            {
+                await SendListOfFavouritesAPODorPhoto(botClient, message);
+            }
+            else
+            if (message.Text == "/clearapod")
+            {
+                await ClearFavouriteAPODlist(botClient, message);
+            }
+            else
+            if (message.Text == "/clearmars")
+            {
+                await ClearFavouriteMarsPhotosList(botClient, message);
             }
             else
             if (message.Text == "🛰️ISS")
             {
                 await SendISS(botClient, message);
-                return;
             }
             else
             if (message.Text == "🌌APOD")
             {  
                 await SendAPOD(botClient, message);
-                return;
             }
             else
             if (message.Text == "🌠APODbyDate")
             {
-                LastText = "📆Enter a date:";
+                LastText = "Enter the date in the appropriate format(YYYY-MM-DD) 📆";
 
                 Message sendMessage = await botClient.SendTextMessageAsync(
                     message.Chat.Id,
-                    "Enter a date:",
+                    "Enter the date in the appropriate format(YYYY-MM-DD) 📆",
                     replyMarkup: new ReplyKeyboardRemove(),
                     cancellationToken: cancellationToken
                     );
-
-                return;
             }
             else
-            if (LastText == "📆Enter a date:")
+            if (LastText == "Enter the date in the appropriate format(YYYY-MM-DD) 📆")
             {
                 if (message.Text == null)
                 {
@@ -131,72 +141,107 @@ namespace SpaceInformationBot
                 {
                     if (FirstText == "🪐MarsRoverPhotos")
                     {
-                        Date = date;
-                        await SendChooseCamera(botClient, message);
+                        try
+                        {
+                            Date = date;
+                            await SendChooseCamera(botClient, message);
+                        }
+                        catch (Exception)
+                        {
+
+                            await botClient.SendTextMessageAsync(
+                                message.Chat.Id,
+                                "Error, enter the date between 2012-08-06 and today"
+                                );
+                        }
+                        
                     }
                     else
-                        await SendAPOD(botClient, message, date);
-                    
+                        try
+                        {
+                            await SendAPOD(botClient, message, date);
+                        }
+                        catch (Exception)
+                        {
+                            await botClient.SendTextMessageAsync(
+                                message.Chat.Id,
+                                "Error, something went wrong, try again"
+                                );
+                        }
+
+                    FirstText = message.Text;
+                    LastText = message.Text;
                 }
-                FirstText = message.Text;
-                LastText = message.Text;
-                return;
+                else
+                {
+                    await botClient.SendTextMessageAsync(
+                    message.Chat.Id,
+                    "The date entered incorrectly, try again"
+                    );
+                }
+                
             }
             else
             if (message.Text == "🪐MarsRoverPhotos")
             {
                 FirstText = message.Text;
-                LastText = "📆Enter a date:";
-
-                //Message message1 = await botClient.SendTextMessageAsync(
-                //    message.Chat.Id,
-                //    text: "Loading...",
-                //    replyMarkup: new ReplyKeyboardRemove()
-                //    );
-
-                //await botClient.DeleteMessageAsync(
-                //    message1.Chat.Id,
-                //    message1.MessageId
-                //    );
-
-                
+                LastText = "Enter the date in the appropriate format(YYYY-MM-DD) 📆";
 
                 Message sendMessage = await botClient.SendTextMessageAsync(
                     message.Chat.Id,
-                    "📆Enter a date:",
+                    "Enter the date in the appropriate format(YYYY-MM-DD) and between 2012-08-06 and today 📆",
                     replyMarkup: new ReplyKeyboardRemove(),
                     cancellationToken: cancellationToken
                     );
-                //await SendChooseCamera(botClient, message);
 
-                return;
             }
             else
             if (message.Text == "🚀LocationOfISS")
             {
                 await SendLocationOfISS(botClient, message);
-                return; 
             }
             else
             if (message.Text == "🧑🏻‍🚀NoPiS")
             {
                 await SendNumberOfPeople(botClient, message);
             }
-            else
-            if (message.Text == "/help")
-            {
-                await SendHelpMessage(botClient, message);
+            
+            return;
+        }
 
-            }
-            else
-            if (message.Text == "/myfavourites")
-            {
-                await SendListOfFavouritesAPODorPhoto(botClient, message);
-            }
+        private async Task ClearFavouriteMarsPhotosList(ITelegramBotClient botClient, Message message)
+        {
+
+            string text = "Are you really want to clear the list😳";
+            await botClient.SendTextMessageAsync(
+                message.Chat.Id,
+                text,
+                replyMarkup: inlineClearOrNot(false)
+                );
+            return;
+        }
+
+        private async Task ClearFavouriteAPODlist(ITelegramBotClient botClient, Message message)
+        {
+            string text = "Are you really want to clear the list😳";
+            await botClient.SendTextMessageAsync(
+                message.Chat.Id,
+                text,
+                replyMarkup: inlineClearOrNot(true)
+                );
+            return;
         }
 
         private async Task SendListOfFavouritesAPODorPhoto(ITelegramBotClient botClient, Message message)
         {
+            if (!norm)
+            {
+                await botClient.DeleteMessageAsync(
+                apodmessage.Chat.Id,
+                apodmessage.MessageId
+                );
+            }
+            norm = true;
             Message message1 = await botClient.SendTextMessageAsync(
                 message.Chat.Id,
                 text: "Loading...",
@@ -229,10 +274,24 @@ namespace SpaceInformationBot
 
         private async Task SendHelpMessage(ITelegramBotClient botClient, Message message)
         {
-            string text = "some info";
+            string text = "*You can control me by sending these commands:*" +
+                "\n\n/menu - call the main menu" +
+                "\n/myfavourites - lists of objects you like will be displayed" +
+                "\n/clearapod - all your 'Favourite APODs' list items will be deleted" +
+                "\n/clearmars - all your 'Favourite Mars photos' list items will be deleted" +
+                "\n/help - instructions for using the bot" +
+                "\n\n*Button functions:*" +
+                "\n*🛰️ISS* - information about the location of the ISS and the number of people in Space" +
+                "\n*🌌APOD* - information about Astronomy Picture of the Day " +
+                "\n*🌠APODbyDate*  - information about Astronomy Picture of a certain Day" +
+                "\n*🪐MarsRoverPhotos* - incredible photos of Mars, just enter the date and" +
+                " will see landscapes of this beautiful planet taken on this day";
+
+
             await botClient.SendTextMessageAsync(
                 message.Chat.Id,
-                text
+                text,
+                parseMode: ParseMode.Markdown
                 );
 
             return;
@@ -333,6 +392,55 @@ namespace SpaceInformationBot
             return;
         }
 
+        private InlineKeyboardMarkup inlineClearOrNot(bool c)
+        {
+            if (c)
+                return new(
+                    new[]
+                    {
+                        // first row
+                        new []
+                        {
+                            InlineKeyboardButton.WithCallbackData( "NO", $"No")
+
+                        },
+                        new []
+                        {
+                            InlineKeyboardButton.WithCallbackData( "Yes", $"clearApod")
+
+                        },
+                        new []
+                        {
+                            InlineKeyboardButton.WithCallbackData( "Of course not", $"No")
+
+
+                        }
+                        
+                    });
+            else
+                return new(
+                    new[]
+                    {
+                        // first row
+                        new []
+                        {
+                            InlineKeyboardButton.WithCallbackData( "NO", $"No")
+
+                        },
+                        new []
+                        {
+                            InlineKeyboardButton.WithCallbackData( "Yes", $"clearMars")
+
+                        },
+                        new []
+                        {
+                            InlineKeyboardButton.WithCallbackData( "Of course not", $"No")
+
+
+                        }
+
+                    });
+        }
         private InlineKeyboardMarkup InlineCameraKeyboard()
         {
             return new(
@@ -504,10 +612,74 @@ namespace SpaceInformationBot
 
             return inlineKeyboard;
         }
+        private InlineKeyboardMarkup inlineUnderFavouriteMarsPhoto(bool value)
+        {
+            InlineKeyboardMarkup inlineKeyboard;
+            if (value)
+            {
+                inlineKeyboard = new(
+                    new[]
+                    {
+                        // first row
+                        new[]
+                        {
+                            InlineKeyboardButton.WithCallbackData("⬅️", $"PrevFavouritePhoto"),
 
+                            InlineKeyboardButton.WithCallbackData($"{NumberOfPhoto + 1}/{marsPhotosList.Count}", "count"),
+
+                            InlineKeyboardButton.WithCallbackData("➡️", $"NextFavouritePhoto")
+                        },
+                        new[]
+                        {
+                            InlineKeyboardButton.WithCallbackData("↩️Back", $"BackToFavourites"),
+
+                            InlineKeyboardButton.WithCallbackData("🗑️Remove", $"RemoveFavouritePhoto")
+                        },
+                        new[]
+                        {
+                            InlineKeyboardButton.WithCallbackData("🚪Close", $"Close")
+                        }
+                    });
+                return inlineKeyboard;
+            }
+            inlineKeyboard = new(
+                    new[]
+                    {
+                        // first row
+                        new[]
+                        {
+                            InlineKeyboardButton.WithCallbackData("⬅️", $"PrevFavouritePhoto"),
+
+                            InlineKeyboardButton.WithCallbackData($"{NumberOfPhoto + 1}/{marsPhotosList.Count}", "count"),
+
+                            InlineKeyboardButton.WithCallbackData("➡️", $"NextFavouritePhoto")
+                        },
+                        new[]
+                        {
+                            InlineKeyboardButton.WithCallbackData("↩️Back", $"BackToFavourites"),
+
+                            InlineKeyboardButton.WithCallbackData("✅Removed", $"RemoveFavouritePhoto")
+                        },
+                        new[]
+                        {
+                            InlineKeyboardButton.WithCallbackData("🚪Close", $"Close")
+                        }
+                    });
+
+            return inlineKeyboard;
+        }
 
         public async Task<Message> SendMainMenuAsync(ITelegramBotClient botClient, Message message)
         {
+            if (!norm)
+            {
+                await botClient.DeleteMessageAsync(
+                apodmessage.Chat.Id,
+                apodmessage.MessageId
+                );
+            }
+            norm = true;
+
             ReplyKeyboardMarkup replyKeyboardMarkup = new(new[]
               {
                     new KeyboardButton [] { "🛰️ISS" },
@@ -521,7 +693,7 @@ namespace SpaceInformationBot
 
             return await botClient.SendTextMessageAsync(
                     message.Chat.Id,
-                    "Choose, what you want to know:",
+                    "Choose, what you want to see:",
                     replyMarkup: replyKeyboardMarkup
                     );
         }
@@ -541,12 +713,12 @@ namespace SpaceInformationBot
             APOD apod;
             if ( date == null)
             {
-               apod = new SpaceClient().GetAPODAsync().Result;
+               apod = new APODClient().GetAPODAsync().Result;
 
             }
             else
             {
-                apod = new SpaceClient().GetAPODAsync(date).Result;
+                apod = new APODClient().GetAPODAsync(date).Result;
 
             }
             apod_to_db = apod;
@@ -569,7 +741,7 @@ namespace SpaceInformationBot
                 message1.MessageId
                 );
 
-            var NullorNot = new ApodDBClient().GetInfoAboutUserFavourites((int)message.Chat.Id, apod.url).Result;
+            var NullorNot = new APODClient().GetInfoAboutUserFavourites((int)message.Chat.Id, apod.url).Result;
 
             bool c = true;
             if (NullorNot == null)
@@ -592,7 +764,9 @@ namespace SpaceInformationBot
             }
             catch (Exception)
             {
-                await botClient.SendPhotoAsync(
+                norm = false;
+
+                apodmessage = await botClient.SendPhotoAsync(
                     message.Chat.Id,
                     apod.url
                     );
@@ -635,9 +809,35 @@ namespace SpaceInformationBot
         {
             switch (callbackQuery.Data)
             {
+                case "clearMars":
+                    await botClient.DeleteMessageAsync(callbackQuery.Message!.Chat.Id, callbackQuery.Message!.MessageId);
+
+                    await DeleteAllMarsItems(botClient, callbackQuery.Message!);
+                    break;
+                case "clearApod":
+                    await botClient.DeleteMessageAsync(callbackQuery.Message!.Chat.Id, callbackQuery.Message!.MessageId);
+
+                    await DeleteAllApodItems(botClient, callbackQuery.Message!);
+                    break;
+                case "No":
+                    await botClient.DeleteMessageAsync(callbackQuery.Message!.Chat.Id, callbackQuery.Message!.MessageId);
+
+                    await botClient.DeleteMessageAsync(callbackQuery.Message!.Chat.Id, callbackQuery.Message!.MessageId);
+
+                    break;
+                case "RemoveFavouritePhoto":
+                    await AddOrDeleteFavouriteMarsPhoto(botClient, callbackQuery, false);
+
+                    break;
+                case "NextFavouritePhoto":
+                    await SendNextFavouritePhoto(botClient, callbackQuery.Message!);
+                    break;
+                case "PrevFavouritePhoto":
+                    await SendPrevFavouritePhoto(botClient, callbackQuery.Message!);
+                    break;
                 case "FavouritePhoto":
 
-                    await AddFavouriteMarsPhoto(botClient, callbackQuery);
+                    await AddOrDeleteFavouriteMarsPhoto(botClient, callbackQuery, true);
                     break;
                 case "RemoveFromFavourite":
                     apod_to_db = apodlist[NumberOfPhoto];
@@ -653,7 +853,7 @@ namespace SpaceInformationBot
                     break;
                 case "BackToFavourites":
                     await botClient.DeleteMessageAsync(callbackQuery.Message!.Chat.Id, callbackQuery.Message!.MessageId);
-
+                    NumberOfPhoto = 0;
                     await SendListOfFavouritesAPODorPhoto(botClient, callbackQuery.Message!);
                     break;
                 case "Favourite":
@@ -766,104 +966,61 @@ namespace SpaceInformationBot
             return;
         }
 
-        MarsPhotoDB marsPhoto = new();
-        Photos photo = new();
-        private async Task AddFavouriteMarsPhoto(ITelegramBotClient botClient, CallbackQuery callbackQuery)
+
+        private async Task DeleteAllMarsItems(ITelegramBotClient botClient, Message message)
         {
-            var client = new MarsPhotoDBClient();
-            var result = await client.GetInfoAboutUserFavourites((int)callbackQuery.Message!.Chat.Id, photo.img_src);
-
-            if (result == null)
+            var client = new MarsRoverPhotosClient();
+            var chek = client.GetAllUserDataFromDynamoDB((int)message.Chat.Id).Result;
+            if (chek == null || chek.Count == 0)
             {
-                var post = await new MarsPhotoDBClient().PostDataToDynamoDB(photo, (int)callbackQuery.Message!.Chat.Id);
-
-                await botClient.AnswerCallbackQueryAsync(
-                    callbackQuery.Id,
-                    "Added successfully to 'My Favourites'"
-                    );
-
-                await botClient.EditMessageReplyMarkupAsync(
-                    callbackQuery.Message!.Chat.Id,
-                    callbackQuery.Message!.MessageId,
-                    replyMarkup: inlineUnderMarsPhoto(true)
+                await botClient.SendTextMessageAsync(message.Chat.Id,
+                    "Your list is already empty"
                     );
             }
             else
             {
-                await client.DeleteDataFromDynamoDB((int)callbackQuery.Message!.Chat.Id, result.url);
+                await client.DeleteAllUserDataFromDynamoDB((int)message.Chat.Id);
 
-                await botClient.AnswerCallbackQueryAsync(
-                    callbackQuery.Id,
-                    "Removed from 'My Favoutites'"
-                    );
-
-                await botClient.EditMessageReplyMarkupAsync(
-                    callbackQuery.Message!.Chat.Id,
-                    callbackQuery.Message!.MessageId,
-                    replyMarkup: inlineUnderMarsPhoto(false)
+                await botClient.SendTextMessageAsync(message.Chat.Id,
+                    "Your list cleared successfully✅"
                     );
             }
             return;
         }
-
-        private async Task SendNextAPOD(ITelegramBotClient botClient, Message message)
+        private async Task DeleteAllApodItems(ITelegramBotClient botClient, Message message)
         {
-            NumberOfPhoto++;
-            if (NumberOfPhoto == apodlist.Count)
+            var client = new APODClient();
+            
+            var c = client.DeleteAllUserDataFromDynamoDB((int)message.Chat.Id).Result;
+            if (c)
             {
-                NumberOfPhoto = 0;
+                await botClient.SendTextMessageAsync(message.Chat.Id,
+                "Your list cleared successfully✅"
+                );
             }
-            string text;
-
-            if (apodlist[NumberOfPhoto].media_type == "video")
-                text = "*" + apodlist[NumberOfPhoto].title + $"* [🎞️]({apodlist[NumberOfPhoto].url})" + "\n\n" + apodlist[NumberOfPhoto].explanation + "\n" + "_" + apodlist[NumberOfPhoto].date + "_\n\n _P.S. Click_ 🎞️";
             else
-                text = "*" + apodlist[NumberOfPhoto].title + "*" + "\n\n" + apodlist[NumberOfPhoto].explanation + "\n" + "_" + apodlist[NumberOfPhoto].date + "_";
-
-            var result = new ApodDBClient().GetInfoAboutUserFavourites((int)message.Chat.Id, apodlist[NumberOfPhoto].url).Result;
-
-            bool value = true;
-            if (result == null)
             {
-                value = false;
+                await botClient.SendTextMessageAsync(message.Chat.Id,
+                "Your list is already empty"
+                );
             }
-
-            await botClient.EditMessageMediaAsync(
-                chatId: message.Chat.Id,
-                messageId: message.MessageId,
-                new InputMediaPhoto(new InputMedia(apodlist[NumberOfPhoto].url))
-
-             );
-            await botClient.EditMessageCaptionAsync(
-                chatId: message.Chat.Id,
-                messageId: message.MessageId,
-                caption: text,
-                replyMarkup: inlineUnderFavouriteAPOD(value),
-                parseMode: ParseMode.Markdown
-                ) ;
-            //await botClient.SendPhotoAsync(
-            //    message.Chat.Id,
-            //    photos[NumberOfPhoto].img_src,
-            //    );
+                
+            
             return;
         }
-        private async Task SendPrevAPOD(ITelegramBotClient botClient, Message message)
+
+        private async Task SendPrevFavouritePhoto(ITelegramBotClient botClient, Message message)
         {
             NumberOfPhoto--;
             if (NumberOfPhoto == -1)
             {
-                NumberOfPhoto = apodlist.Count-1;
+                NumberOfPhoto = marsPhotosList.Count - 1;
             }
+            string text = "*Rover of Mars name*: " + marsPhotosList[NumberOfPhoto].roverName +
+                "\n*Name of camera*: " + marsPhotosList[NumberOfPhoto].cameraName +
+                "\n*Date*: " + marsPhotosList[NumberOfPhoto].earth_date;
 
-            string text;
-
-            if (apodlist[NumberOfPhoto].media_type == "video")
-                text = "*" + apodlist[NumberOfPhoto].title + $"* [🎞️]({apodlist[NumberOfPhoto].url})" + "\n\n" + apodlist[NumberOfPhoto].explanation + "\n" + "_" + apodlist[NumberOfPhoto].date + "_\n\n _P.S. Click_ 🎞️";
-            else
-                text = "*" + apodlist[NumberOfPhoto].title + "*" + "\n\n" + apodlist[NumberOfPhoto].explanation + "\n" + "_" + apodlist[NumberOfPhoto].date + "_";
-
-
-            var result = new ApodDBClient().GetInfoAboutUserFavourites((int)message.Chat.Id, apodlist[NumberOfPhoto].url).Result;
+            var result = new MarsRoverPhotosClient().GetInfoAboutUserFavourites((int)message.Chat.Id, marsPhotosList[NumberOfPhoto].url).Result;
 
             bool value = true;
             if (result == null)
@@ -874,124 +1031,147 @@ namespace SpaceInformationBot
             await botClient.EditMessageMediaAsync(
                 chatId: message.Chat.Id,
                 messageId: message.MessageId,
-                new InputMediaPhoto(new InputMedia(apodlist[NumberOfPhoto].url))
+                new InputMediaPhoto(new InputMedia(marsPhotosList[NumberOfPhoto].url)),
+                replyMarkup: inlineUnderFavouriteMarsPhoto(value)
 
              );
             await botClient.EditMessageCaptionAsync(
                 chatId: message.Chat.Id,
                 messageId: message.MessageId,
                 caption: text,
-                replyMarkup: inlineUnderFavouriteAPOD(value),
+                replyMarkup: inlineUnderFavouriteMarsPhoto(value),
                 parseMode: ParseMode.Markdown
                 );
-            //await botClient.SendPhotoAsync(
-            //    message.Chat.Id,
-            //    photos[NumberOfPhoto].img_src,
-            //    );
-            return;
-        }
-
-        List<MarsPhotoDB> marsPhotosList = new();
-        private async Task SendFavouriteMarsPhotos(ITelegramBotClient botClient, CallbackQuery callbackQuery)
-        {
-            var favouriteslist = new MarsPhotoDBClient().GetAllUserDataFromDynamoDB((int)callbackQuery.Message!.Chat.Id).Result;
-
-            if (favouriteslist == null || favouriteslist.Count == 0)
-            {
-                InlineKeyboardMarkup inlineKeyboard = new(
-                    new[]
-                    {
-                        InlineKeyboardButton.WithCallbackData( "↩️Back", $"BackToFavourites")
-                    });
-                await botClient.SendTextMessageAsync(
-                    callbackQuery.Message.Chat.Id,
-                    "empty",
-                    replyMarkup: inlineKeyboard
-                    );
-                return;
-            }
-
-            marsPhotosList = favouriteslist;
-
-            string text = ""
 
             return;
         }
-        List<APOD> apodlist = new();
-        private async Task SendFavouriteAPOD(ITelegramBotClient botClient, CallbackQuery callbackQuery)
+        private async Task SendNextFavouritePhoto(ITelegramBotClient botClient, Message message)
         {
-            var favouriteslist = new ApodDBClient().GetAllUserDataFromDynamoDB((int)callbackQuery.Message!.Chat.Id).Result;
-
-            if (favouriteslist == null || favouriteslist.Count == 0)
+            NumberOfPhoto++;
+            if (NumberOfPhoto == marsPhotosList.Count)
             {
-                InlineKeyboardMarkup inlineKeyboard = new(
-                    new[]
-                    {
-                        InlineKeyboardButton.WithCallbackData( "↩️Back", $"BackToFavourites")
-                    });
-                await botClient.SendTextMessageAsync(
-                    callbackQuery.Message.Chat.Id,
-                    "empty",
-                    replyMarkup: inlineKeyboard
-                    );
-                return;
+                NumberOfPhoto = 0;
             }
-            apodlist = favouriteslist;
+            string text = "*Rover of Mars name*: " + marsPhotosList[NumberOfPhoto].roverName +
+                "\n*Name of camera*: " + marsPhotosList[NumberOfPhoto].cameraName +
+                "\n*Date*: " + marsPhotosList[NumberOfPhoto].earth_date;
 
-            string text;
+            var result = new MarsRoverPhotosClient().GetInfoAboutUserFavourites((int)message.Chat.Id, marsPhotosList[NumberOfPhoto].url).Result;
 
-            if (favouriteslist[NumberOfPhoto].media_type == "video")
-                text = "*" + favouriteslist[NumberOfPhoto].title + $"* [🎞️]({favouriteslist[NumberOfPhoto].url})" + "\n\n" + favouriteslist[NumberOfPhoto].explanation + "\n" + "_" + favouriteslist[NumberOfPhoto].date + "_\n\n _P.S. Click_ 🎞️";
+            bool value = true;
+            if (result == null)
+            {
+                value = false;
+            }
+
+            await botClient.EditMessageMediaAsync(
+                chatId: message.Chat.Id,
+                messageId: message.MessageId,
+                new InputMediaPhoto(new InputMedia(marsPhotosList[NumberOfPhoto].url)),
+                replyMarkup: inlineUnderFavouriteMarsPhoto(value)
+
+             );
+            await botClient.EditMessageCaptionAsync(
+                chatId: message.Chat.Id,
+                messageId: message.MessageId,
+                caption: text,
+                replyMarkup: inlineUnderFavouriteMarsPhoto(value),
+                parseMode: ParseMode.Markdown
+                );
+
+            return;
+        }
+
+
+        Photos photo;
+        private async Task AddOrDeleteFavouriteMarsPhoto(ITelegramBotClient botClient, CallbackQuery callbackQuery, bool value)
+        {
+            
+
+            if (value)
+            {
+                var client = new MarsRoverPhotosClient();
+                var result = await client.GetInfoAboutUserFavourites((int)callbackQuery.Message!.Chat.Id, photos[NumberOfPhoto].img_src);
+                if (result == null)
+                {
+                    var post = await new MarsRoverPhotosClient().PostDataToDynamoDB(photos[NumberOfPhoto], (int)callbackQuery.Message!.Chat.Id);
+
+                    await botClient.AnswerCallbackQueryAsync(
+                        callbackQuery.Id,
+                        "Added successfully to 'My Favourites'"
+                        );
+
+                    await botClient.EditMessageReplyMarkupAsync(
+                        callbackQuery.Message!.Chat.Id,
+                        callbackQuery.Message!.MessageId,
+                        replyMarkup: inlineUnderMarsPhoto(true)
+                        );
+                }
+                else
+                {
+                    await client.DeleteDataFromDynamoDB((int)callbackQuery.Message!.Chat.Id, result.url);
+
+                    await botClient.AnswerCallbackQueryAsync(
+                        callbackQuery.Id,
+                        "Removed from 'My Favoutites'"
+                        );
+
+                    await botClient.EditMessageReplyMarkupAsync(
+                        callbackQuery.Message!.Chat.Id,
+                        callbackQuery.Message!.MessageId,
+                        replyMarkup: inlineUnderMarsPhoto(false)
+                        );
+                }
+            }
             else
-                text = "*" + favouriteslist[NumberOfPhoto].title + "*" + "\n\n" + favouriteslist[NumberOfPhoto].explanation + "\n" + "_" + favouriteslist[NumberOfPhoto].date + "_";
-
-            var NullorNot = new ApodDBClient().GetInfoAboutUserFavourites((int)callbackQuery.Message!.Chat.Id, favouriteslist[NumberOfPhoto].url).Result;
-
-            bool c = true;
-            if (NullorNot == null)
             {
-                c = false;
-            }
-            try
-            {
-                await botClient.SendPhotoAsync(
-                    callbackQuery.Message!.Chat.Id,
-                    favouriteslist[NumberOfPhoto].url,
-                    caption: text,
-                    parseMode: ParseMode.Markdown,
-                    replyMarkup: inlineUnderFavouriteAPOD(true)
-                    );
-            }
-            catch (Exception)
-            {
-                await botClient.SendPhotoAsync(
-                    callbackQuery.Message!.Chat.Id,
-                    favouriteslist[NumberOfPhoto].url
-                    );
+                var client = new MarsRoverPhotosClient();
+                var result = await client.GetInfoAboutUserFavourites((int)callbackQuery.Message!.Chat.Id, marsPhotosList[NumberOfPhoto].url);
 
-                await botClient.SendTextMessageAsync(
-                    callbackQuery.Message!.Chat.Id,
-                    text,
-                    parseMode: ParseMode.Markdown,
-                    replyMarkup: inlineUnderFavouriteAPOD(true),
-                    disableWebPagePreview: true
-                    );
-            }
+                if (result == null)
+                {
+                    var post = await new MarsRoverPhotosClient().PostDataToDynamoDB(marsPhotosList[NumberOfPhoto], (int)callbackQuery.Message!.Chat.Id);
 
+                    await botClient.AnswerCallbackQueryAsync(
+                        callbackQuery.Id,
+                        "Added successfully to 'My Favourites'"
+                        );
+
+                    await botClient.EditMessageReplyMarkupAsync(
+                        callbackQuery.Message!.Chat.Id,
+                        callbackQuery.Message!.MessageId,
+                        replyMarkup: inlineUnderFavouriteMarsPhoto(true)
+                        );
+                }
+                else
+                {
+                    await client.DeleteDataFromDynamoDB((int)callbackQuery.Message!.Chat.Id, result.url);
+
+                    await botClient.AnswerCallbackQueryAsync(
+                        callbackQuery.Id,
+                        "Removed from 'My Favoutites'"
+                        );
+
+                    await botClient.EditMessageReplyMarkupAsync(
+                        callbackQuery.Message!.Chat.Id,
+                        callbackQuery.Message!.MessageId,
+                        replyMarkup: inlineUnderFavouriteMarsPhoto(false)
+                        );
+                }
+            }
+                
             return;
         }
-
-        APOD apod_to_db;
         private async Task AddOrDeleteToMyFavouriteAPOD(ITelegramBotClient botClient, CallbackQuery callbackQuery, bool value)
         {
             if (value)
             {
-                var client = new ApodDBClient();
+                var client = new APODClient();
                 var result = await client.GetInfoAboutUserFavourites((int)callbackQuery.Message!.Chat.Id, apod_to_db.url);
 
                 if (result == null)
                 {
-                    var post = await new ApodDBClient().PostDataToDynamoDB(apod_to_db, (int)callbackQuery.Message!.Chat.Id);
+                    var post = await new APODClient().PostDataToDynamoDB(apod_to_db, (int)callbackQuery.Message!.Chat.Id);
 
                     await botClient.AnswerCallbackQueryAsync(
                         callbackQuery.Id,
@@ -1022,12 +1202,12 @@ namespace SpaceInformationBot
             }
             else
             {
-                var client = new ApodDBClient();
+                var client = new APODClient();
                 var result = await client.GetInfoAboutUserFavourites((int)callbackQuery.Message!.Chat.Id, apod_to_db.url);
 
                 if (result == null)
                 {
-                    var post = await new ApodDBClient().PostDataToDynamoDB(apod_to_db, (int)callbackQuery.Message!.Chat.Id);
+                    var post = await new APODClient().PostDataToDynamoDB(apod_to_db, (int)callbackQuery.Message!.Chat.Id);
 
                     await botClient.AnswerCallbackQueryAsync(
                         callbackQuery.Id,
@@ -1058,6 +1238,296 @@ namespace SpaceInformationBot
             }
             return;
         }
+
+        bool norm = true;
+        private async Task SendNextAPOD(ITelegramBotClient botClient, Message message)
+        {
+            NumberOfPhoto++;
+            if (NumberOfPhoto == apodlist.Count)
+            {
+                NumberOfPhoto = 0;
+            }
+            string text;
+
+            if (apodlist[NumberOfPhoto].media_type == "video")
+                text = "*" + apodlist[NumberOfPhoto].title + $"* [🎞️]({apodlist[NumberOfPhoto].url})" + "\n\n" + apodlist[NumberOfPhoto].explanation + "\n" + "_" + apodlist[NumberOfPhoto].date + "_\n\n _P.S. Click_ 🎞️";
+            else
+                text = "*" + apodlist[NumberOfPhoto].title + "*" + "\n\n" + apodlist[NumberOfPhoto].explanation + "\n" + "_" + apodlist[NumberOfPhoto].date + "_";
+
+            var result = new APODClient().GetInfoAboutUserFavourites((int)message.Chat.Id, apodlist[NumberOfPhoto].url).Result;
+
+            bool value = true;
+            if (result == null)
+            {
+                value = false;
+            }
+            if (norm)
+            {
+                apodmessage = await botClient.EditMessageMediaAsync(
+                    chatId: message.Chat.Id,
+                    messageId: message.MessageId,
+                    new InputMediaPhoto(new InputMedia(apodlist[NumberOfPhoto].url))
+                    );
+
+                try
+                {
+                    await botClient.EditMessageCaptionAsync(
+                    chatId: message.Chat.Id,
+                    messageId: message.MessageId,
+                    caption: text,
+                    replyMarkup: inlineUnderFavouriteAPOD(value),
+                    parseMode: ParseMode.Markdown
+                    );
+                }
+                catch (Exception)
+                {
+                    norm = false;
+                    await botClient.SendTextMessageAsync(
+                        chatId: message.Chat.Id,
+                        text,
+                        replyMarkup: inlineUnderFavouriteAPOD(value),
+                        parseMode: ParseMode.Markdown,
+                        disableWebPagePreview: true
+                        );
+                }
+                
+            }
+            else
+            {
+                await botClient.DeleteMessageAsync(
+                    chatId: message.Chat.Id,
+                    messageId: message.MessageId);
+
+                apodmessage =  await botClient.EditMessageMediaAsync(
+                    chatId: apodmessage.Chat.Id,
+                    messageId: apodmessage.MessageId,
+                    new InputMediaPhoto(new InputMedia(apodlist[NumberOfPhoto].url))
+                    );
+                try
+                {
+                    norm = true;
+                    await botClient.EditMessageCaptionAsync(
+                    chatId: apodmessage.Chat.Id,
+                    messageId: apodmessage.MessageId,
+                    caption: text,
+                    replyMarkup: inlineUnderFavouriteAPOD(value),
+                    parseMode: ParseMode.Markdown
+                    );
+                }
+                catch (Exception)
+                {
+                    norm = false;
+                    await botClient.SendTextMessageAsync(
+                        chatId: message.Chat.Id,
+                        text,
+                        replyMarkup: inlineUnderFavouriteAPOD(value),
+                        parseMode: ParseMode.Markdown,
+                        disableWebPagePreview: true
+                        );
+                }
+            }
+            return;
+        }
+        private async Task SendPrevAPOD(ITelegramBotClient botClient, Message message)
+        {
+            NumberOfPhoto--;
+            if (NumberOfPhoto == -1)
+            {
+                NumberOfPhoto = apodlist.Count-1;
+            }
+
+            string text;
+
+            if (apodlist[NumberOfPhoto].media_type == "video")
+                text = "*" + apodlist[NumberOfPhoto].title + $"* [🎞️]({apodlist[NumberOfPhoto].url})" + "\n\n" + apodlist[NumberOfPhoto].explanation + "\n" + "_" + apodlist[NumberOfPhoto].date + "_\n\n _P.S. Click_ 🎞️";
+            else
+                text = "*" + apodlist[NumberOfPhoto].title + "*" + "\n\n" + apodlist[NumberOfPhoto].explanation + "\n" + "_" + apodlist[NumberOfPhoto].date + "_";
+
+
+            var result = new APODClient().GetInfoAboutUserFavourites((int)message.Chat.Id, apodlist[NumberOfPhoto].url).Result;
+
+            bool value = true;
+            if (result == null)
+            {
+                value = false;
+            }
+
+            if (norm)
+            {
+                apodmessage = await botClient.EditMessageMediaAsync(
+                    chatId: message.Chat.Id,
+                    messageId: message.MessageId,
+                    new InputMediaPhoto(new InputMedia(apodlist[NumberOfPhoto].url))
+                    );
+
+                try
+                {
+                    await botClient.EditMessageCaptionAsync(
+                    chatId: message.Chat.Id,
+                    messageId: message.MessageId,
+                    caption: text,
+                    replyMarkup: inlineUnderFavouriteAPOD(value),
+                    parseMode: ParseMode.Markdown
+                    );
+                }
+                catch (Exception)
+                {
+                    norm = false;
+                    await botClient.SendTextMessageAsync(
+                        chatId: message.Chat.Id,
+                        text,
+                        replyMarkup: inlineUnderFavouriteAPOD(value),
+                        parseMode: ParseMode.Markdown,
+                        disableWebPagePreview:true
+                        );
+                }
+
+            }
+            else
+            {
+                await botClient.DeleteMessageAsync(
+                    chatId: message.Chat.Id,
+                    messageId: message.MessageId);
+
+                apodmessage = await botClient.EditMessageMediaAsync(
+                    chatId: apodmessage.Chat.Id,
+                    messageId: apodmessage.MessageId,
+                    new InputMediaPhoto(new InputMedia(apodlist[NumberOfPhoto].url))
+                    );
+                try
+                {
+                    norm = true;
+                    await botClient.EditMessageCaptionAsync(
+                    chatId: apodmessage.Chat.Id,
+                    messageId: apodmessage.MessageId,
+                    caption: text,
+                    replyMarkup: inlineUnderFavouriteAPOD(value),
+                    parseMode: ParseMode.Markdown
+                    );
+                }
+                catch (Exception)
+                {
+                    norm = false;
+                    await botClient.SendTextMessageAsync(
+                        chatId: message.Chat.Id,
+                        text,
+                        replyMarkup: inlineUnderFavouriteAPOD(value),
+                        parseMode: ParseMode.Markdown,
+                        disableWebPagePreview: true
+                        );
+                }
+            }
+            return;
+        }
+
+        List<MarsPhotoDB> marsPhotosList = new();
+        private async Task SendFavouriteMarsPhotos(ITelegramBotClient botClient, CallbackQuery callbackQuery)
+        {
+            var favouriteslist = new MarsRoverPhotosClient().GetAllUserDataFromDynamoDB((int)callbackQuery.Message!.Chat.Id).Result;
+
+            if (favouriteslist == null || favouriteslist.Count == 0)
+            {
+                InlineKeyboardMarkup inlineKeyboard = new(
+                    new[]
+                    {
+                        InlineKeyboardButton.WithCallbackData( "↩️Back", $"BackToFavourites"),
+                        InlineKeyboardButton.WithCallbackData( "Close", $"Close")
+
+                    });
+                await botClient.SendTextMessageAsync(
+                    callbackQuery.Message.Chat.Id,
+                    "Your list is empty",
+                    replyMarkup: inlineKeyboard
+                    );
+                return;
+            }
+
+            marsPhotosList = favouriteslist;
+
+            string text = "*Rover of Mars name*: " + favouriteslist[NumberOfPhoto].roverName +
+                "\n*Name of camera*: " + favouriteslist[NumberOfPhoto].cameraName +
+                "\n*Date*: " + favouriteslist[NumberOfPhoto].earth_date;
+
+            await botClient.SendPhotoAsync(
+                    callbackQuery.Message!.Chat.Id,
+                    favouriteslist[NumberOfPhoto].url,
+                    caption: text,
+                    parseMode: ParseMode.Markdown,
+                    replyMarkup: inlineUnderFavouriteMarsPhoto(true)
+                    );
+            return;
+        }
+        List<APOD> apodlist = new();
+
+        Message apodmessage = new();
+        private async Task SendFavouriteAPOD(ITelegramBotClient botClient, CallbackQuery callbackQuery)
+        {
+            var favouriteslist = new APODClient().GetAllUserDataFromDynamoDB((int)callbackQuery.Message!.Chat.Id).Result;
+
+            if (favouriteslist == null || favouriteslist.Count == 0)
+            {
+                InlineKeyboardMarkup inlineKeyboard = new(
+                    new[]
+                    {
+                        InlineKeyboardButton.WithCallbackData( "↩️Back", $"BackToFavourites"),
+                        InlineKeyboardButton.WithCallbackData( "Close", $"Close")
+
+                    });
+                await botClient.SendTextMessageAsync(
+                    callbackQuery.Message.Chat.Id,
+                    "Your list is empty",
+                    replyMarkup: inlineKeyboard
+                    );
+                return;
+            }
+            apodlist = favouriteslist;
+
+            string text;
+
+            if (favouriteslist[NumberOfPhoto].media_type == "video")
+                text = "*" + favouriteslist[NumberOfPhoto].title + $"* [🎞️]({favouriteslist[NumberOfPhoto].url})" + "\n\n" + favouriteslist[NumberOfPhoto].explanation + "\n" + "_" + favouriteslist[NumberOfPhoto].date + "_\n\n _P.S. Click_ 🎞️";
+            else
+                text = "*" + favouriteslist[NumberOfPhoto].title + "*" + "\n\n" + favouriteslist[NumberOfPhoto].explanation + "\n" + "_" + favouriteslist[NumberOfPhoto].date + "_";
+
+            var NullorNot = new APODClient().GetInfoAboutUserFavourites((int)callbackQuery.Message!.Chat.Id, favouriteslist[NumberOfPhoto].url).Result;
+
+            bool c = true;
+            if (NullorNot == null)
+            {
+                c = false;
+            }
+            try
+            {
+                await botClient.SendPhotoAsync(
+                    callbackQuery.Message!.Chat.Id,
+                    favouriteslist[NumberOfPhoto].url,
+                    caption: text,
+                    parseMode: ParseMode.Markdown,
+                    replyMarkup: inlineUnderFavouriteAPOD(true)
+                    );
+            }
+            catch (Exception)
+            {
+                norm = false;
+
+                apodmessage = await botClient.SendPhotoAsync(
+                    callbackQuery.Message!.Chat.Id,
+                    favouriteslist[NumberOfPhoto].url
+                    );
+
+                await botClient.SendTextMessageAsync(
+                    callbackQuery.Message!.Chat.Id,
+                    text,
+                    parseMode: ParseMode.Markdown,
+                    replyMarkup: inlineUnderFavouriteAPOD(true),
+                    disableWebPagePreview: true
+                    );
+            }
+
+            return;
+        }
+
+        APOD apod_to_db;
 
         private async Task UpdateLocation(ITelegramBotClient botClient, CallbackQuery callbackQuery)
         {
@@ -1145,7 +1615,7 @@ namespace SpaceInformationBot
 
         private async Task SendCameraPhoto(string date, string camera, ITelegramBotClient botClient, Message message)
         {
-            photos = new SpaceClient().GetMarsPhotosAsync(date, camera).Result.photos;
+            photos = new MarsRoverPhotosClient().GetMarsPhotosAsync(date, camera).Result.photos;
 
             if (photos.Count == 0)
             {
@@ -1167,7 +1637,7 @@ namespace SpaceInformationBot
             }
 
             photo = photos[NumberOfPhoto];
-            var result = new MarsPhotoDBClient().GetInfoAboutUserFavourites((int)message.Chat.Id, photos[NumberOfPhoto].img_src).Result;
+            var result = new MarsRoverPhotosClient().GetInfoAboutUserFavourites((int)message.Chat.Id, photos[NumberOfPhoto].img_src).Result;
             bool value = true;
             if (result == null)
             {
@@ -1198,7 +1668,7 @@ namespace SpaceInformationBot
             }
             photo = photos[NumberOfPhoto];
 
-            var result = new MarsPhotoDBClient().GetInfoAboutUserFavourites((int)message.Chat.Id, photos[NumberOfPhoto].img_src).Result;
+            var result = new MarsRoverPhotosClient().GetInfoAboutUserFavourites((int)message.Chat.Id, photos[NumberOfPhoto].img_src).Result;
             bool value = true;
             if (result == null)
             {
@@ -1225,7 +1695,7 @@ namespace SpaceInformationBot
             }
             photo = photos[NumberOfPhoto];
 
-            var result = new MarsPhotoDBClient().GetInfoAboutUserFavourites((int)message.Chat.Id, photos[NumberOfPhoto].img_src).Result;
+            var result = new MarsRoverPhotosClient().GetInfoAboutUserFavourites((int)message.Chat.Id, photos[NumberOfPhoto].img_src).Result;
             bool value = true;
             if (result == null)
             {

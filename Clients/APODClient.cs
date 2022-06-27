@@ -6,23 +6,41 @@ using System.Text;
 
 namespace SpaceInformationBot.Clients
 {
-    public class ApodDBClient
+    public class APODClient
     {
         private HttpClient _httpClient;
         private static string? _adrres;
 
-        public ApodDBClient() 
+        public APODClient() 
         {
             _adrres = Constants.address;
             _httpClient = new HttpClient();
             _httpClient.BaseAddress = new Uri(_adrres);   
         }
 
+        public async Task<APOD> GetAPODAsync()
+        {
+            //var response = await _httpClient.GetAsync($"/planetary/apod?api_key={_apikey}");
+            var response = await _httpClient.GetAsync($"/APOD/apod");
+            var content = response.Content.ReadAsStringAsync().Result;
+            var result = JsonConvert.DeserializeObject<APOD>(content);
+            return result;
+        }
+
+        public async Task<APOD> GetAPODAsync(string date)
+        {
+            //var response = await _httpClient.GetAsync($"/planetary/apod?api_key={_apikey}");
+            var response = await _httpClient.GetAsync($"/APOD/apodbydate?date={date}");
+            var content = response.Content.ReadAsStringAsync().Result;
+            var result = JsonConvert.DeserializeObject<APOD>(content);
+            return result;
+        }
+
         public async Task<APOD?> GetInfoAboutUserFavourites(int userID, string url)  
         {
             try
             {
-                var response = await _httpClient.GetAsync($"/ApodDB/getInfoAboutAPODFromDB?userID={userID}&url={url}");
+                var response = await _httpClient.GetAsync($"/APOD/getInfoAboutAPODFromDB?userID={userID}&url={url}");
                 var content = response.Content.ReadAsStringAsync().Result;
                 var result = JsonConvert.DeserializeObject<APOD>(content);
                 return result;
@@ -37,7 +55,7 @@ namespace SpaceInformationBot.Clients
         {
             try
             {
-                var response = await _httpClient.GetAsync($"/ApodDB/getAllUserFavouriteAPODsFromDB?userID={userID}");
+                var response = await _httpClient.GetAsync($"/APOD/getAllUserFavouriteAPODsFromDB?userID={userID}");
                 var content = response.Content.ReadAsStringAsync().Result;
                 var result = JsonConvert.DeserializeObject<List<APOD>>(content);
                 return result;
@@ -57,7 +75,8 @@ namespace SpaceInformationBot.Clients
                 title = obj.title,
                 explanation = obj.explanation,
                 date = obj.date,
-                url = obj.url
+                url = obj.url,
+                media_type = obj.media_type
             };
 
             var jsonfile = JsonConvert.SerializeObject(data);
@@ -66,7 +85,7 @@ namespace SpaceInformationBot.Clients
 
             try
             {
-                var post = await _httpClient.PostAsync($"/ApodDB/addFavouriteAPODToDB", stringContent);
+                var post = await _httpClient.PostAsync($"/APOD/addFavouriteAPODToDB", stringContent);
             }
             catch(Exception)
             {
@@ -80,7 +99,7 @@ namespace SpaceInformationBot.Clients
         {
             try
             {
-                await _httpClient.DeleteAsync($"/ApodDB/deleteAPODFromDB?userID={userID}&url={url}");
+                await _httpClient.DeleteAsync($"/APOD/deleteAPODFromDB?userID={userID}&url={url}");
             }
             catch (Exception)
             {
@@ -94,7 +113,7 @@ namespace SpaceInformationBot.Clients
         {
             try
             {
-                await _httpClient.DeleteAsync($"/ApodDB/deleteAllUserAPODsFromDB?userID={userID}");
+                await _httpClient.DeleteAsync($"/APOD/deleteAllUserAPODsFromDB?userID={userID}");
             }
             catch (Exception)
             {

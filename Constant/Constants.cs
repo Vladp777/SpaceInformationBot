@@ -10,5 +10,6 @@ namespace SpaceInformationBot.Constant
     {
         public static string address = $"https://localhost:7177";
         //public static string apikey = "4FZ483eU50xnS4ADcrv7yTetZ0VFPzXbNPJV0tdV";
+        public static string TelegramToken = "5564266408:AAEACdzJ_x0G-mfGh0N6m_VaUzRKNIrvD20";
     }
 }
