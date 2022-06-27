@@ -4,9 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NASAInformationBot.Model
+namespace SpaceInformationBot.Model
 {
-    public  class APODModel
+    public  class APOD
     {
         public string date { get; set; }
         public string explanation { get; set; }

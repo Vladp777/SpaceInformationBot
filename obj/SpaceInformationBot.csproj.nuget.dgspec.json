@@ -1,15 +1,15 @@
 {
   "format": 1,
   "restore": {
-    "D:\\GitRep\\TelegramBot\\NASAInformationBot.csproj": {}
+    "D:\\GitRep\\TelegramBot\\SpaceInformationBot.csproj": {}
   },
   "projects": {
-    "D:\\GitRep\\TelegramBot\\NASAInformationBot.csproj": {
+    "D:\\GitRep\\TelegramBot\\SpaceInformationBot.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\GitRep\\TelegramBot\\NASAInformationBot.csproj",
-        "projectName": "NASAInformationBot",
-        "projectPath": "D:\\GitRep\\TelegramBot\\NASAInformationBot.csproj",
+        "projectUniqueName": "D:\\GitRep\\TelegramBot\\SpaceInformationBot.csproj",
+        "projectName": "SpaceInformationBot",
+        "projectPath": "D:\\GitRep\\TelegramBot\\SpaceInformationBot.csproj",
         "packagesPath": "C:\\Users\\Vlad\\.nuget\\packages\\",
         "outputPath": "D:\\GitRep\\TelegramBot\\obj\\",
         "projectStyle": "PackageReference",
@@ -40,9 +40,9 @@
         "net6.0": {
           "targetAlias": "net6.0",
           "dependencies": {
-            "MySql.Data": {
+            "AWSSDK.DynamoDBv2": {
               "target": "Package",
-              "version": "[8.0.29, )"
+              "version": "[3.7.3.51, )"
             },
             "Newtonsoft.Json": {
               "target": "Package",

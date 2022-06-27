@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NASAInformationBot.Model
+namespace SpaceInformationBot.Model
 {
     public class MarsRoverPhotos
     {
