@@ -6,12 +6,12 @@ using System.Text;
 
 namespace SpaceInformationBot.Clients
 {
-    public class DynamoDBClient
+    public class ApodDBClient
     {
         private HttpClient _httpClient;
         private static string? _adrres;
 
-        public DynamoDBClient() 
+        public ApodDBClient() 
         {
             _adrres = Constants.address;
             _httpClient = new HttpClient();
@@ -22,7 +22,7 @@ namespace SpaceInformationBot.Clients
         {
             try
             {
-                var response = await _httpClient.GetAsync($"/DynamoDB/getInfoAboutItemFromDB?userID={userID}&url={url}");
+                var response = await _httpClient.GetAsync($"/ApodDB/getInfoAboutAPODFromDB?userID={userID}&url={url}");
                 var content = response.Content.ReadAsStringAsync().Result;
                 var result = JsonConvert.DeserializeObject<APOD>(content);
                 return result;
@@ -37,7 +37,7 @@ namespace SpaceInformationBot.Clients
         {
             try
             {
-                var response = await _httpClient.GetAsync($"/DynamoDB/getAllUserFavouritesFromDB?userID={userID}");
+                var response = await _httpClient.GetAsync($"/ApodDB/getAllUserFavouriteAPODsFromDB?userID={userID}");
                 var content = response.Content.ReadAsStringAsync().Result;
                 var result = JsonConvert.DeserializeObject<List<APOD>>(content);
                 return result;
@@ -66,7 +66,7 @@ namespace SpaceInformationBot.Clients
 
             try
             {
-                var post = await _httpClient.PostAsync($"/DynamoDB/addFavouriteToDB", stringContent);
+                var post = await _httpClient.PostAsync($"/ApodDB/addFavouriteAPODToDB", stringContent);
             }
             catch(Exception)
             {
@@ -80,7 +80,7 @@ namespace SpaceInformationBot.Clients
         {
             try
             {
-                await _httpClient.DeleteAsync($"/DynamoDB/deleteFromDB?userID={userID}&url={url}");
+                await _httpClient.DeleteAsync($"/ApodDB/deleteAPODFromDB?userID={userID}&url={url}");
             }
             catch (Exception)
             {
@@ -94,7 +94,7 @@ namespace SpaceInformationBot.Clients
         {
             try
             {
-                await _httpClient.DeleteAsync($"/DynamoDB/deleteAllUserDataFromDB?userID={userID}");
+                await _httpClient.DeleteAsync($"/ApodDB/deleteAllUserAPODsFromDB?userID={userID}");
             }
             catch (Exception)
             {
