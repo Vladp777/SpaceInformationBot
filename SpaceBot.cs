@@ -1586,8 +1586,8 @@ namespace SpaceInformationBot
                         },
                     });
 
-            FileStream fsSource = new FileStream(@"cameraExample.png", FileMode.Open, FileAccess.Read);
-            InputOnlineFile file = new InputOnlineFile(fsSource);
+            //FileStream fsSource = new FileStream(@"cameraExample.png", FileMode.Open, FileAccess.Read);
+            //InputOnlineFile file = new InputOnlineFile(fsSource);
 
             string infotext = " You can choose the camera and see it's photos\n" +
                 "FHAZ -_Front Hazard Avoidance Camera_\n" +
@@ -1601,11 +1601,10 @@ namespace SpaceInformationBot
                 "MINITES - _Miniature Thermal Emission Spectrometer (Mini-TES)_";
 
 
-            await botClient.SendPhotoAsync(
+            await botClient.SendTextMessageAsync(
                 message.Chat.Id,
-                file,
+                infotext,
                 parseMode: ParseMode.Markdown,
-                caption: infotext,
                 replyMarkup: inlineKeyboard
                 );
         }
@@ -1741,12 +1740,12 @@ namespace SpaceInformationBot
                         }
                     });
 
-            FileStream fsSource = new FileStream(@"Curiosity.jpg", FileMode.Open, FileAccess.Read);
-            InputOnlineFile file = new InputOnlineFile(fsSource);
+            //FileStream fsSource = new FileStream(@"Curiosity.jpg", FileMode.Open, FileAccess.Read);
+            //InputOnlineFile file = new InputOnlineFile(fsSource);
 
             await botClient.SendPhotoAsync(
                 message.Chat.Id,
-                file,
+                "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/PIA16239_High-Resolution_Self-Portrait_by_Curiosity_Rover_Arm_Camera.jpg/431px-PIA16239_High-Resolution_Self-Portrait_by_Curiosity_Rover_Arm_Camera.jpg",
                 caption: content,
                 parseMode: ParseMode.Markdown,
                 replyMarkup: inlineKeyboard
