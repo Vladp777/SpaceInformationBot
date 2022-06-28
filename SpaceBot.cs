@@ -29,7 +29,7 @@ namespace SpaceInformationBot
             var botMe = await client.GetMeAsync();
             
             Console.WriteLine($"Бот {botMe.Username} почав працювати");
-            Console.ReadKey();
+            //Console.ReadKey();
         }
 
         private Task HandlerError(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
@@ -1528,7 +1528,7 @@ namespace SpaceInformationBot
         }
 
         APOD apod_to_db;
-
+         
         private async Task UpdateLocation(ITelegramBotClient botClient, CallbackQuery callbackQuery)
         {
             var location = new OpenNotifyClient().GetLocationAsync().Result;

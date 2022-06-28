@@ -5,4 +5,4 @@ SpaceBot bot = new();
 
 await bot.Start();
 
-Console.ReadKey();
+//Console.ReadKey();
