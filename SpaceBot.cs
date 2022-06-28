@@ -1585,7 +1585,7 @@ namespace SpaceInformationBot
                         },
                     });
 
-            FileStream fsSource = new FileStream(@"D:\GitRep\TelegramBot\cameraExample.png", FileMode.Open, FileAccess.Read);
+            FileStream fsSource = new FileStream(@"cameraExample.png", FileMode.Open, FileAccess.Read);
             InputOnlineFile file = new InputOnlineFile(fsSource);
 
             string infotext = " You can choose the camera and see it's photos\n" +
@@ -1740,7 +1740,7 @@ namespace SpaceInformationBot
                         }
                     });
 
-            FileStream fsSource = new FileStream(@"D:\GitRep\TelegramBot\Curiosity.jpg", FileMode.Open, FileAccess.Read);
+            FileStream fsSource = new FileStream(@"Curiosity.jpg", FileMode.Open, FileAccess.Read);
             InputOnlineFile file = new InputOnlineFile(fsSource);
 
             await botClient.SendPhotoAsync(
